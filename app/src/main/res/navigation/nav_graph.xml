@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/loadingFragment">
+
+    <fragment
+        android:id="@+id/loadingFragment"
+        android:name="it.rortos.aztecroll.ui.fragments.LoadingFragment"
+        android:label="LoadingFragment" >
+        <action
+            android:id="@+id/action_loadingFragment_to_webFragment"
+            app:destination="@id/webFragment" />
+        <action
+            android:id="@+id/action_loadingFragment_to_cloakFragment"
+            app:destination="@id/cloakFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/webFragment"
+        android:name="it.rortos.aztecroll.ui.fragments.WebFragment"
+        android:label="WebFragment" >
+        <action
+            android:id="@+id/action_webFragment_to_cloakFragment"
+            app:destination="@id/cloakFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/cloakFragment"
+        android:name="it.rortos.aztecroll.ui.fragments.CloakFragment"
+        android:label="CloakFragment" />
+</navigation>

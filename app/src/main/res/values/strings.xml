@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">Aztec Roll</string>
+
+    <string name="secure_get_parametr">N70ySZcyUi</string>
+    <string name="secure_key">XSvgm7PfB4</string>
+    <string name="dev_tmz_key">LgOQiMQfxK</string>
+    <string name="adb_key">w0khLCHkfQ</string>
+    <string name="referrer_key">P0kDAtGkM0</string>
+    <string name="gadid_key">3PlcbWpGcB</string>
+    <string name="deeplink_key">LpM5K80Cgk</string>
+    <string name="source_key">9wPsX5wtGo</string>
+    <string name="af_id_key">SypXt7jPYn</string>
+    <string name="adset_id_key">SGmLaJVc0A</string>
+    <string name="campaign_id_key">dV1VeuxtTV</string>
+    <string name="app_campaign_key">ooBolcjVT0</string>
+    <string name="adset_key">dcOR0yzVjn</string>
+    <string name="adgroup_key">1nJNwmv5a3</string>
+    <string name="orig_cost_key">3CAof1CqTE</string>
+    <string name="af_siteid_key">miHiiAJ5Gq</string>
+
+    <string name="facebook_app_id">656399595997206</string>
+    <string name="facebook_client_token">d8c516cd848d25ed07f89c376cac74e1</string>
+
+    <string name="onesignal_id">48f153ac-eb02-4e39-9ab7-17f198c95386</string>
+    <string name="apps_dev_key">GTZBJPzUiokYGU3U7UCbaR</string>
+    <string name="url_base">https://firewolf.site/aztecroll.php</string>
+    <string name="url_short">https://firewolf.site/</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+</resources>
