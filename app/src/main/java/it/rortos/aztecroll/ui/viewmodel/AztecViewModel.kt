@@ -4,14 +4,16 @@ import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.provider.Settings
+import android.util.Log
 import androidx.core.net.toUri
 import androidx.lifecycle.viewModelScope
 import com.appsflyer.AppsFlyerLib
+import com.facebook.applinks.AppLinkData
 import dagger.hilt.android.lifecycle.HiltViewModel
+import it.rortos.aztecroll.AztecApp.Companion.adID
 import it.rortos.aztecroll.R
 import it.rortos.aztecroll.data.Aztec
 import it.rortos.aztecroll.di.repository.DatabaseRepInt
-import it.rortos.aztecroll.ui.HostActivity
 import it.rortos.aztecroll.util.Const
 import it.rortos.aztecroll.util.DataFetcher
 import it.rortos.aztecroll.util.FbFetcher
@@ -25,20 +27,32 @@ import javax.inject.Inject
 class AztecViewModel @Inject constructor(private val repository: DatabaseRepInt, app: Application) :
     BaseVIewModel(app) {
 
-    private val fbFetcher = FbFetcher()
+    private val fbFetcher = FbFetcher(app)
     private val appsDataFetcher = DataFetcher()
     private val tag = OneSignalTagSender()
+    private var _data: MutableMap<String, Any>? = null
+    private val data get() = _data
+    private var deeplink: String? = null
+    private lateinit var createdUrl: String
 
     fun createNewUrl(app: Context): String {
-        val createdUrl: String
-        val deeplink = fbFetcher.getDLink(app)
+        AppLinkData.fetchDeferredAppLinkData(app.applicationContext) {
+//            deeplink = it?.targetUri.toString()
+            deeplink = "myapp://test1/test2/test3/test4/test5"
+        }
+        Log.d("mytag", "this is deeplink - $deeplink")
+
         createdUrl = if (deeplink == "null") {
-            val data = appsDataFetcher.getData(app)
+            appsDataFetcher.getData(app.applicationContext) {
+                _data = it
+            }
+            Log.d("myTag", "the returned data is ${_data.toString()}")
+
             tag.makeTag("null", data)
             buildUrl("null", data, context.applicationContext)
         } else {
-            tag.makeTag(deeplink, null)
-            buildUrl(deeplink, null, context.applicationContext)
+            tag.makeTag(deeplink!!, null)
+            buildUrl(deeplink!!, null, context.applicationContext)
         }
         return createdUrl
     }
@@ -68,7 +82,8 @@ class AztecViewModel @Inject constructor(private val repository: DatabaseRepInt,
                 app.getString(R.string.dev_tmz_key),
                 TimeZone.getDefault().id
             )
-            appendQueryParameter(app.getString(R.string.gadid_key), HostActivity.adID)
+
+            appendQueryParameter(app.getString(R.string.gadid_key), adID)
             appendQueryParameter(app.getString(R.string.deeplink_key), deeplink)
             appendQueryParameter(app.getString(R.string.secure_key), source)
             appendQueryParameter(

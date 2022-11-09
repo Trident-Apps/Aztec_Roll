@@ -26,5 +26,17 @@
     <fragment
         android:id="@+id/cloakFragment"
         android:name="it.rortos.aztecroll.ui.fragments.CloakFragment"
-        android:label="CloakFragment" />
+        android:label="CloakFragment" >
+        <action
+            android:id="@+id/action_cloakFragment_to_resultFragment"
+            app:destination="@id/resultFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/resultFragment"
+        android:name="it.rortos.aztecroll.ui.fragments.ResultFragment"
+        android:label="ResultFragment" >
+        <action
+            android:id="@+id/action_resultFragment_to_cloakFragment"
+            app:destination="@id/cloakFragment" />
+    </fragment>
 </navigation>

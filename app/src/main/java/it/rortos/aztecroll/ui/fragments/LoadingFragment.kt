@@ -1,15 +1,18 @@
 package it.rortos.aztecroll.ui.fragments
 
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.OnBackPressedCallback
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -20,8 +23,14 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import dagger.hilt.android.AndroidEntryPoint
+import it.rortos.aztecroll.AztecApp.Companion.adID
 import it.rortos.aztecroll.R
+import it.rortos.aztecroll.ui.HostActivity
 import it.rortos.aztecroll.ui.viewmodel.AztecViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @AndroidEntryPoint
 class LoadingFragment : Fragment() {
@@ -34,7 +43,6 @@ class LoadingFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         Log.d("myTag", " started Loading Fragment")
-        args = arguments?.getString("url", "") ?: ""
         return ComposeView(requireContext()).apply {
             setContent {
                 Surface {
@@ -51,19 +59,34 @@ class LoadingFragment : Fragment() {
                         CircularProgressIndicator()
                     }
 
-                    url = with(viewModel.getAllFromDb()) {
-                        this?.savedUrl ?: viewModel.createNewUrl(requireContext())
-                    }
-                    if (!viewModel.isDeviceSecured(requireActivity())) {
-                        navigateToCloak()
-                        Log.d("myTag", "navigated to cloak")
-                    } else {
-                        navigateToWeb(args)
-                        Log.d("myTag", " navigated to web with this url: $args")
+                    LaunchedEffect(key1 = true) {
+                        launch(Dispatchers.IO) {
+                            delay(1000L)
+                            url = with(viewModel.getAllFromDb()) {
+                                this?.savedUrl ?: viewModel.createNewUrl(requireContext())
+                            }
+                            withContext(Dispatchers.Main.immediate) {
+                                if (!viewModel.isDeviceSecured(requireActivity())) {
+                                    navigateToCloak()
+                                    Log.d("myTag", "navigated to cloak")
+                                } else {
+                                    navigateToWeb(url)
+                                    Log.d("myTag", " navigated to web with this url: $url")
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        requireActivity().onBackPressedDispatcher.addCallback(
+            object : OnBackPressedCallback(false) {
+                override fun handleOnBackPressed() {}
+            })
     }
 
     private fun navigateToWeb(arg: String) {

@@ -8,7 +8,10 @@ import dagger.hilt.android.HiltAndroidApp
 class AztecApp : Application() {
     override fun onCreate() {
         super.onCreate()
-//        OneSignal.initWithContext(this)
-//        OneSignal.setAppId(applicationContext.getString(R.string.onesignal_id))
+        OneSignal.initWithContext(this)
+        OneSignal.setAppId(applicationContext.getString(R.string.onesignal_id))
+    }
+    companion object {
+       lateinit var adID: String
     }
 }

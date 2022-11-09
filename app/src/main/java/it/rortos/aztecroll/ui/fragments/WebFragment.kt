@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import android.os.Message
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,12 +22,13 @@ import dagger.hilt.android.AndroidEntryPoint
 import it.rortos.aztecroll.R
 import it.rortos.aztecroll.data.Aztec
 import it.rortos.aztecroll.ui.viewmodel.AztecViewModel
+import it.rortos.aztecroll.util.Const
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class WebFragment : Fragment() {
     lateinit var webView: WebView
-    private var redirected = false
+    private var redirected = true
     private var valueCallback: ValueCallback<Array<Uri?>>? = null
     private val viewModel: AztecViewModel by viewModels()
 
@@ -39,43 +41,63 @@ class WebFragment : Fragment() {
             setContent {
                 AndroidView(factory = {
                     WebView(it).apply {
-//                        layoutParams = ViewGroup.LayoutParams(
-//                            ViewGroup.LayoutParams.MATCH_PARENT,
-//                            ViewGroup.LayoutParams.MATCH_PARENT
-//                        )
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                        )
                         webView = this
                         webView.webViewClient = object : WebViewClient() {
+                            override fun onReceivedError(
+                                view: WebView?,
+                                request: WebResourceRequest?,
+                                error: WebResourceError?
+                            ) {
+                                super.onReceivedError(view, request, error)
+                            }
+
+                            override fun shouldOverrideUrlLoading(
+                                view: WebView?,
+                                request: WebResourceRequest?
+                            ): Boolean {
+                                return super.shouldOverrideUrlLoading(view, request)
+                            }
+
                             override fun onPageStarted(
                                 view: WebView?,
                                 url: String?,
                                 favicon: Bitmap?
                             ) {
                                 super.onPageStarted(view, url, favicon)
-                                redirected = true
+                                redirected = false
                             }
 
                             override fun onPageFinished(view: WebView?, url: String?) {
                                 super.onPageFinished(view, url)
                                 CookieManager.getInstance().flush()
-                                if (url == "https://firewolf.site/") {
-                                    findNavController().navigate(R.id.cloakFragment)
-                                } else {
-                                    lifecycleScope.launch {
-                                        viewModel.getAllFromDb()?.savedUrl?.let {
-                                            viewModel.insertIntoDb(Aztec(1, url!!, true))
+                                if (!redirected) {
+                                    if (url == "https://firewolf.site/") {
+                                        findNavController().navigate(R.id.cloakFragment)
+                                    } else {
+                                        lifecycleScope.launch {
+                                            if (viewModel.getAllFromDb()?.savedUrl == null) {
+                                                viewModel.insertIntoDb(Aztec(1, url!!, true))
+                                                Log.d("myTag", url)
+                                            }
+
                                         }
                                     }
                                 }
                             }
                         }
-                        loadUrl(arguments?.getString("url", "") ?: "null")
+                        webView.loadUrl(arguments?.getString("url", "") ?: "null")
+//                        loadUrl("https://ru.imgbb.com/")
                         CookieManager.getInstance().setAcceptCookie(true)
                         CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
-                        settings.javaScriptEnabled = true
-                        settings.userAgentString.replace("wv", "")
-                        settings.domStorageEnabled = true
-                        settings.loadWithOverviewMode = false
-                        webChromeClient = object : WebChromeClient() {
+                        webView.settings.javaScriptEnabled = true
+                        webView.settings.userAgentString.replace("wv", "")
+                        webView.settings.domStorageEnabled = true
+                        webView.settings.loadWithOverviewMode = false
+                        webView.webChromeClient = object : WebChromeClient() {
                             override fun onProgressChanged(view: WebView?, newProgress: Int) {
                                 super.onProgressChanged(view, newProgress)
                             }
@@ -96,7 +118,7 @@ class WebFragment : Fragment() {
                                 isUserGesture: Boolean,
                                 resultMsg: Message?
                             ): Boolean {
-                                val newWebView = webView!!
+                                val newWebView = webView
                                 newWebView.webChromeClient = this
                                 newWebView.settings.javaScriptEnabled = true
                                 newWebView.settings.javaScriptCanOpenWindowsAutomatically = true
@@ -138,9 +160,13 @@ class WebFragment : Fragment() {
     }
 
     private fun chooseImageIfNeeded() {
-        val intent = Intent(Intent.ACTION_GET_CONTENT)
-        intent.addCategory((Intent.CATEGORY_OPENABLE))
-        intent.type = "image/*"
+        with(Intent(Intent.ACTION_GET_CONTENT)) {
+            this.addCategory(Intent.CATEGORY_OPENABLE)
+            this.type = Const.INTENT_TYPE
+            startActivityForResult(
+                Intent.createChooser(this, Const.CHOOSER_TYPE), 1
+            )
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
