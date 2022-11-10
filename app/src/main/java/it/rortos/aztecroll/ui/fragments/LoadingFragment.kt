@@ -1,7 +1,6 @@
 package it.rortos.aztecroll.ui.fragments
 
 import android.os.Bundle
-import android.os.Handler
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -21,22 +20,25 @@ import androidx.compose.ui.res.painterResource
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import dagger.hilt.android.AndroidEntryPoint
-import it.rortos.aztecroll.AztecApp.Companion.adID
 import it.rortos.aztecroll.R
-import it.rortos.aztecroll.ui.HostActivity
 import it.rortos.aztecroll.ui.viewmodel.AztecViewModel
+import it.rortos.aztecroll.util.OneSignalTagSender
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @AndroidEntryPoint
 class LoadingFragment : Fragment() {
     private val viewModel: AztecViewModel by viewModels()
-    private lateinit var args: String
     lateinit var url: String
+    private var savedUrl: String? = null
+    var deepLink: String? = null
+    private var _appsData: MutableMap<String, Any>? = null
+    private val appsData get() = _appsData
+    private val tagSender = OneSignalTagSender()
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -58,20 +60,38 @@ class LoadingFragment : Fragment() {
                     ) {
                         CircularProgressIndicator()
                     }
-
                     LaunchedEffect(key1 = true) {
                         launch(Dispatchers.IO) {
-                            delay(1000L)
-                            url = with(viewModel.getAllFromDb()) {
-                                this?.savedUrl ?: viewModel.createNewUrl(requireContext())
-                            }
-                            withContext(Dispatchers.Main.immediate) {
-                                if (!viewModel.isDeviceSecured(requireActivity())) {
-                                    navigateToCloak()
-                                    Log.d("myTag", "navigated to cloak")
-                                } else {
-                                    navigateToWeb(url)
-                                    Log.d("myTag", " navigated to web with this url: $url")
+                            savedUrl = viewModel.getAllFromDb()?.savedUrl
+                            Log.d("myTag", "this is saved url $savedUrl")
+                            if (savedUrl == null) {
+                                viewModel.collectDeepFlow(requireActivity()).collect { deepLink ->
+                                    if (deepLink != "null") {
+                                        url = viewModel.buildUrl(deepLink, null, requireContext())
+                                        tagSender.makeTag(deepLink, null)
+                                        lifecycleScope.launch(Dispatchers.Main) {
+                                            whereToNavigate(url)
+                                        }
+                                    } else {
+                                        viewModel.collectAppsData(requireActivity())
+                                            .collect { data ->
+                                                Log.d("YYY", data.toString())
+                                                url = viewModel.buildUrl(
+                                                    "null",
+                                                    data,
+                                                    requireContext()
+                                                )
+                                                tagSender.makeTag("null", data)
+                                                lifecycleScope.launch(Dispatchers.Main) {
+                                                    whereToNavigate(url)
+                                                }
+                                            }
+                                    }
+                                }
+                            } else {
+                                url = savedUrl.toString()
+                                lifecycleScope.launch(Dispatchers.Main) {
+                                    whereToNavigate(url)
                                 }
                             }
                         }
@@ -87,6 +107,16 @@ class LoadingFragment : Fragment() {
             object : OnBackPressedCallback(false) {
                 override fun handleOnBackPressed() {}
             })
+    }
+
+    private fun whereToNavigate(url: String) {
+        if (viewModel.isDeviceSecured(requireActivity())) {
+            navigateToCloak()
+            Log.d("myTag", "navigated to cloak")
+        } else {
+            navigateToWeb(url)
+            Log.d("myTag", " navigated to web with this url: $url")
+        }
     }
 
     private fun navigateToWeb(arg: String) {

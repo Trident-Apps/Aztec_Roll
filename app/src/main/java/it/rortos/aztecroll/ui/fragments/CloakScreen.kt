@@ -122,7 +122,12 @@ private fun play(view: ImageView, navController: NavController) {
         val list = listOf(1, 2, 3).shuffled()
         if (list[0] == 1) {
             view.setImageResource(R.drawable.ic3)
-            navigateToResult(navController, "You Won")
+            view.animate().apply {
+                duration = 1000L
+                rotationYBy(360f)
+            }.withEndAction{
+                navigateToResult(navController, "You Won")
+            }
         } else {
             val ivList = listOf(R.drawable.ic, R.drawable.ic2).shuffled()
             view.setImageResource(ivList[0])

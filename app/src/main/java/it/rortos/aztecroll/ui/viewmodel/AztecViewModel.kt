@@ -7,6 +7,7 @@ import android.provider.Settings
 import android.util.Log
 import androidx.core.net.toUri
 import androidx.lifecycle.viewModelScope
+import com.appsflyer.AppsFlyerConversionListener
 import com.appsflyer.AppsFlyerLib
 import com.facebook.applinks.AppLinkData
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,10 +16,10 @@ import it.rortos.aztecroll.R
 import it.rortos.aztecroll.data.Aztec
 import it.rortos.aztecroll.di.repository.DatabaseRepInt
 import it.rortos.aztecroll.util.Const
-import it.rortos.aztecroll.util.DataFetcher
-import it.rortos.aztecroll.util.FbFetcher
-import it.rortos.aztecroll.util.OneSignalTagSender
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
@@ -27,37 +28,39 @@ import javax.inject.Inject
 class AztecViewModel @Inject constructor(private val repository: DatabaseRepInt, app: Application) :
     BaseVIewModel(app) {
 
-    private val fbFetcher = FbFetcher(app)
-    private val appsDataFetcher = DataFetcher()
-    private val tag = OneSignalTagSender()
-    private var _data: MutableMap<String, Any>? = null
-    private val data get() = _data
-    private var deeplink: String? = null
-    private lateinit var createdUrl: String
-
-    fun createNewUrl(app: Context): String {
-        AppLinkData.fetchDeferredAppLinkData(app.applicationContext) {
-//            deeplink = it?.targetUri.toString()
-            deeplink = "myapp://test1/test2/test3/test4/test5"
+    fun collectDeepFlow(app: Context): Flow<String> = callbackFlow {
+        AppLinkData.fetchDeferredAppLinkData(app) {
+            trySend(it?.targetUri.toString())
         }
-        Log.d("mytag", "this is deeplink - $deeplink")
-
-        createdUrl = if (deeplink == "null") {
-            appsDataFetcher.getData(app.applicationContext) {
-                _data = it
-            }
-            Log.d("myTag", "the returned data is ${_data.toString()}")
-
-            tag.makeTag("null", data)
-            buildUrl("null", data, context.applicationContext)
-        } else {
-            tag.makeTag(deeplink!!, null)
-            buildUrl(deeplink!!, null, context.applicationContext)
-        }
-        return createdUrl
+        awaitClose()
     }
 
-    private fun buildUrl(
+    fun collectAppsData(app: Context): Flow<MutableMap<String, Any>?> = callbackFlow {
+        AppsFlyerLib.getInstance()
+            .init(app.getString(R.string.af_id_key), object : AppsFlyerConversionListener {
+                override fun onConversionDataSuccess(p0: MutableMap<String, Any>?) {
+                    Log.d("YYY", "onConversionDataSuccess")
+                    trySend(p0)
+                }
+
+                override fun onConversionDataFail(p0: String?) {
+                    Log.d("YYY", "onConversionDataFail")
+                    trySend(null)
+                }
+
+                override fun onAppOpenAttribution(p0: MutableMap<String, String>?) {
+                    TODO("Not yet implemented")
+                }
+
+                override fun onAttributionFailure(p0: String?) {
+                    TODO("Not yet implemented")
+                }
+            }, app)
+        AppsFlyerLib.getInstance().start(app)
+        awaitClose()
+    }
+
+    fun buildUrl(
         deeplink: String,
         data: MutableMap<String, Any>?,
         app: Context
@@ -132,7 +135,7 @@ class AztecViewModel @Inject constructor(private val repository: DatabaseRepInt,
         ) == "1"
     }
 
-    fun getAllFromDb(): Aztec? = repository.getUser()
+    fun getAllFromDb() = repository.getUser()
 
     fun insertIntoDb(aztec: Aztec) = viewModelScope.launch(Dispatchers.IO) {
         repository.insertUser(aztec)
