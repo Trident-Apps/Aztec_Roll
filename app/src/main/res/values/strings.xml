@@ -25,6 +25,4 @@
     <string name="apps_dev_key">GTZBJPzUiokYGU3U7UCbaR</string>
     <string name="url_base">https://firewolf.site/aztecroll.php</string>
     <string name="url_short">https://firewolf.site/</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

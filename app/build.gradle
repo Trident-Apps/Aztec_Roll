@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace 'it.rortos.aztecroll'
+    namespace 'it.rortos.realflig'
     compileSdk 32
 
     defaultConfig {
-        applicationId "it.rortos.aztecroll"
+        applicationId "it.rortos.realflig"
         minSdk 24
         targetSdk 32
         versionCode 1
